@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">系统工具箱</string>
+    <string name="subtitle">系统修复与增强工具集</string>
+    <string name="service_description">系统工具箱 — 微信通知提醒服务，用于监听微信消息通知并触发铃声和震动提醒</string>
+
+    <!-- 通知监听 -->
+    <string name="notification_access">通知监听权限</string>
+    <string name="status_checking">正在检查…</string>
+    <string name="status_enabled">已授权 — 正在监听微信消息</string>
+    <string name="status_disabled">未授权 — 请点击下方按钮开启</string>
+    <string name="btn_open_settings">打开通知权限设置</string>
+
+    <!-- 使用情况访问 -->
+    <string name="usage_stats_title">使用情况访问权限</string>
+    <string name="usage_stats_checking">使用情况访问权限：检查中…</string>
+    <string name="usage_stats_granted">使用情况访问权限：已授权（可检测微信是否在前台）</string>
+    <string name="usage_stats_denied">使用情况访问权限：未授权（无法区分前台/后台）</string>
+    <string name="btn_usage_stats">打开使用情况访问设置</string>
+    <string name="btn_usage_stats_done">已授权</string>
+
+    <!-- 电池优化 -->
+    <string name="battery_title">后台保活</string>
+    <string name="battery_desc">关闭电池优化可防止系统在后台杀死本服务。建议设为「不优化」以确保消息提醒不中断。</string>
+    <string name="btn_battery">关闭电池优化</string>
+
+    <!-- 微信通知提醒页面 -->
+    <string name="wechat_title">微信通知提醒</string>
+    <string name="wechat_subtitle">修复微信消息无铃声/震动的问题</string>
+    <string name="wechat_foreground_notification_title">微信通知提醒</string>
+    <string name="wechat_foreground_notification_text">正在监听微信消息…</string>
+
+    <!-- 仪表盘 -->
+    <string name="dashboard_footer">后续可在此添加更多系统工具</string>
+
+    <!-- 使用说明 -->
+    <string name="how_to_use">使用说明</string>
+    <string name="instructions">1. 点击「打开通知权限设置」，在列表中找到「微信通知提醒」，打开开关\n2. 在确认对话框中选择「允许」\n3. 返回本 App，确认状态变为「已授权」\n4. 点击「打开使用情况访问」，允许本 App 读取应用使用情况（用于检测微信是否在前台）\n5. 点击「关闭电池优化」，设为「不优化」，防止被杀后台\n\n提醒策略：\n• 微信在前台（聊天界面内）：仅震动\n• 微信在后台/锁屏/桌面：铃声 + 震动\n• 静音/勿扰模式：跟随系统，不提醒\n• 微信电话/视频：不做处理（微信自身可正常提醒）</string>
+</resources>
