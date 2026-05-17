@@ -33,6 +33,17 @@
     <!-- 仪表盘 -->
     <string name="dashboard_footer">后续可在此添加更多系统工具</string>
 
+    <!-- 系统更新屏蔽 -->
+    <string name="update_blocker_title">系统更新屏蔽</string>
+    <string name="update_blocker_subtitle">拦截更新推送 + 一键复制 ADB 禁用命令</string>
+    <string name="update_blocker_notify_active">通知拦截已生效\n\n已屏蔽以下包名的通知（即时生效，无需额外操作）：\n%2$s\n\n也拦截标题/内容包含关键词的通知。</string>
+    <string name="update_blocker_pkg_list">屏蔽目标</string>
+    <string name="update_blocker_keyword_note">通知关键词：</string>
+    <string name="update_blocker_copy_disable">复制禁用命令</string>
+    <string name="update_blocker_copy_restore">复制恢复命令</string>
+    <string name="update_blocker_copied_disable">ADB 禁用命令已复制到剪贴板</string>
+    <string name="update_blocker_copied_restore">ADB 恢复命令已复制到剪贴板</string>
+
     <!-- 使用说明 -->
     <string name="how_to_use">使用说明</string>
     <string name="instructions">1. 点击「打开通知权限设置」，在列表中找到「微信通知提醒」，打开开关\n2. 在确认对话框中选择「允许」\n3. 返回本 App，确认状态变为「已授权」\n4. 点击「打开使用情况访问」，允许本 App 读取应用使用情况（用于检测微信是否在前台）\n5. 点击「关闭电池优化」，设为「不优化」，防止被杀后台\n\n提醒策略：\n• 微信在前台（聊天界面内）：仅震动\n• 微信在后台/锁屏/桌面：铃声 + 震动\n• 静音/勿扰模式：跟随系统，不提醒\n• 微信电话/视频：不做处理（微信自身可正常提醒）</string>

@@ -16,6 +16,7 @@ import android.os.VibratorManager
 import android.service.notification.NotificationListenerService
 import android.service.notification.StatusBarNotification
 import com.example.systemtoolkit.R
+import com.example.systemtoolkit.feature.updateblocker.SystemUpdatePackages
 
 class WeChatNotificationService : NotificationListenerService() {
 
@@ -29,6 +30,12 @@ class WeChatNotificationService : NotificationListenerService() {
     }
 
     override fun onNotificationPosted(sbn: StatusBarNotification) {
+        // 屏蔽系统更新通知
+        if (isSystemUpdateNotification(sbn)) {
+            cancelNotification(sbn.key)
+            return
+        }
+
         if (sbn.packageName != WECHAT_PACKAGE) return
 
         // 跳过来电/视频通话 — 微信自己处理正常
@@ -62,6 +69,17 @@ class WeChatNotificationService : NotificationListenerService() {
     override fun onDestroy() {
         stopCurrentRingtone()
         super.onDestroy()
+    }
+
+    // ---------- 系统更新通知屏蔽 ----------
+
+    private fun isSystemUpdateNotification(sbn: StatusBarNotification): Boolean {
+        if (sbn.packageName in SystemUpdatePackages.allBlockedPackages()) return true
+        val title = sbn.notification.extras?.getString(Notification.EXTRA_TITLE) ?: ""
+        val text = sbn.notification.extras?.getString(Notification.EXTRA_TEXT) ?: ""
+        return SystemUpdatePackages.notificationKeywords.any {
+            title.contains(it) || text.contains(it)
+        }
     }
 
     // ---------- 前台检测 ----------
