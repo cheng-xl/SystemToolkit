@@ -1,23 +1,52 @@
 # 系统工具箱
 
-Android 系统修复与增强工具集。首个工具解决 Flyme10 / Android 14 上微信消息不响铃不震动的问题。
+Android 系统修复与增强工具集，三个工具解决 Flyme10 / Android 14 常见痛点。
 
-## 当前功能
+---
 
-### 微信通知提醒
+## 工具一：微信通知提醒
+
+修复微信消息不响铃不震动的问题。
 
 | 场景 | 铃声 | 震动 |
 |---|---|---|
-| 微信在后台 / 锁屏 / 桌面 | ✅ | ✅ |
-| 微信在前台（聊天界面内） | ❌ | ✅ |
+| 后台 / 锁屏 / 桌面 | ✅ | ✅ |
+| 聊天界面内（前台） | ❌ | ✅ |
+| 静音模式 | ❌ | ✅ |
 | 震动模式 | ❌ | ✅ |
-| 静音模式 | ❌ | ❌ |
 | 勿扰模式 | ❌ | ❌ |
 | 微信语音/视频电话 | ❌ | ❌ |
 
-- 前台服务保活，不会被系统杀死
-- 3 秒防抖，避免连续消息轰炸
-- 来电自动过滤，不与微信自带来电提醒冲突
+- 前台服务保活，防系统回收
+- 3 秒防抖，避免消息轰炸
+- 来电自动拦截，不与微信自带提醒冲突
+
+## 工具二：系统更新屏蔽
+
+永久禁止系统更新，阻止更新推送。
+
+- **通知拦截**：自动识别系统更新通知并立即消除（基于包名 + 关键词）
+- **ADB 命令**：一键复制 `pm disable-user` / `pm enable` 命令到剪贴板
+- 覆盖 Flyme/Meizu + 通用系统更新包
+
+## 工具三：游戏横屏弹幕
+
+横屏打游戏时用弹幕代替响铃震动，不打断游戏。
+
+- 弹幕从右滑入、匀速飘过、5 秒消失，不拦截触控
+- 三条触发条件：横屏 + 悬浮窗权限已授权 + 前台是已添加的游戏
+- 游戏包名可自由增删
+
+---
+
+## 安装设置
+
+1. 从 [Releases](https://github.com/cheng-xl/SystemToolkit/releases) 下载 APK 安装
+2. **微信通知提醒**：进入对应页面，按顺序授予四个权限（通知监听 → 使用情况访问 → 电池优化 → 悬浮窗）
+3. **游戏弹幕**：在微信通知提醒页底部添加游戏包名
+4. **系统更新屏蔽**：通知拦截自动生效；如需彻底禁用更新，复制 ADB 命令到电脑执行
+
+---
 
 ## 构建
 
@@ -27,27 +56,27 @@ Android 系统修复与增强工具集。首个工具解决 Flyme10 / Android 14
 
 要求：Android SDK 34、JDK 17。
 
-## 安装
-
-1. 从 [Releases](https://github.com/cheng-xl/SystemToolkit/releases) 下载最新 APK
-2. 安装后打开 App → 点击「打开通知权限设置」→ 找到「系统工具箱」→ 打开
-3. 点击「打开使用情况访问」→ 找到「系统工具箱」→ 允许
-4. 点击「关闭电池优化」→ 选择「不优化」
+---
 
 ## 项目结构
 
 ```
 app/src/main/java/com/example/systemtoolkit/
-├── MainActivity.kt              # 仪表盘
+├── MainActivity.kt
 ├── model/
-│   ├── Tool.kt                   # 工具数据类
-│   └── FeatureRegistry.kt        # 工具注册中心（加新功能只改这里）
+│   ├── Tool.kt                     # 工具数据类
+│   └── FeatureRegistry.kt          # 注册中心
 ├── ui/
-│   └── ToolAdapter.kt            # 列表适配器
+│   └── ToolAdapter.kt
 └── feature/
-    └── wechat/                    # 微信通知提醒
-        ├── WeChatNotifierActivity.kt
-        └── WeChatNotificationService.kt
+    ├── wechat/                      # 微信通知提醒 + 游戏弹幕
+    │   ├── WeChatNotifierActivity.kt
+    │   ├── WeChatNotificationService.kt
+    │   ├── BarrageManager.kt        # 弹幕悬浮窗
+    │   └── GamePackages.kt          # 游戏包名管理
+    └── updateblocker/               # 系统更新屏蔽
+        ├── UpdateBlockerActivity.kt
+        └── SystemUpdatePackages.kt
 ```
 
 ## 添加新工具

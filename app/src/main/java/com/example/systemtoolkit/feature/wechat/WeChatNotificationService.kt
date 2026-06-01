@@ -23,9 +23,11 @@ class WeChatNotificationService : NotificationListenerService() {
     private var lastAlertTime = 0L
     private val minIntervalMs = 3000L
     private var currentRingtone: Ringtone? = null
+    private lateinit var barrageManager: BarrageManager
 
     override fun onCreate() {
         super.onCreate()
+        barrageManager = BarrageManager(this)
         startForegroundService()
     }
 
@@ -40,6 +42,14 @@ class WeChatNotificationService : NotificationListenerService() {
 
         // 跳过来电/视频通话 — 微信自己处理正常
         if (isCallNotification(sbn)) return
+
+        // 游戏横屏模式：弹幕通知，不响铃不震动
+        if (isLandscapeGamingMode()) {
+            val title = sbn.notification.extras?.getString(Notification.EXTRA_TITLE) ?: "微信"
+            val text = sbn.notification.extras?.getString(Notification.EXTRA_TEXT) ?: ""
+            barrageManager.show("$title: $text")
+            return
+        }
 
         val ringerMode = getRingerMode()
         if (!shouldAlert(ringerMode)) return
@@ -68,7 +78,32 @@ class WeChatNotificationService : NotificationListenerService() {
 
     override fun onDestroy() {
         stopCurrentRingtone()
+        barrageManager.dismiss()
         super.onDestroy()
+    }
+
+    // ---------- 游戏模式检测 ----------
+
+    private fun isLandscapeGamingMode(): Boolean {
+        if (!barrageManager.canDraw()) return false
+        if (!barrageManager.isLandscape()) return false
+        val foregroundPkg = getCurrentForegroundPackage() ?: return false
+        return GamePackages.contains(this, foregroundPkg)
+    }
+
+    private fun getCurrentForegroundPackage(): String? {
+        val usm = getSystemService(Context.USAGE_STATS_SERVICE) as? UsageStatsManager
+            ?: return null
+        val now = System.currentTimeMillis()
+        val stats = usm.queryUsageStats(
+            UsageStatsManager.INTERVAL_BEST,
+            now - 5_000,
+            now
+        )
+        return stats
+            .filter { it.lastTimeUsed >= now - 2_000 }
+            .maxByOrNull { it.lastTimeUsed }
+            ?.packageName
     }
 
     // ---------- 系统更新通知屏蔽 ----------
@@ -126,11 +161,11 @@ class WeChatNotificationService : NotificationListenerService() {
             ?: return false
         if (nm.currentInterruptionFilter != NotificationManager.INTERRUPTION_FILTER_ALL) return false
 
-        // 静音模式：不提醒
-        if (ringerMode == AudioManager.RINGER_MODE_SILENT) return false
-
+        // 静音、震动、正常模式均允许提醒
+        // 静音/震动模式下 playSound() 自带模式判断不会响铃
         return ringerMode == AudioManager.RINGER_MODE_NORMAL ||
-               ringerMode == AudioManager.RINGER_MODE_VIBRATE
+               ringerMode == AudioManager.RINGER_MODE_VIBRATE ||
+               ringerMode == AudioManager.RINGER_MODE_SILENT
     }
 
     // ---------- 声音 ----------
