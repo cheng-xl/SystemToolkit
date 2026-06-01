@@ -29,7 +29,8 @@ class WeChatNotifierActivity : AppCompatActivity() {
     private lateinit var btnUsageStats: MaterialButton
     private lateinit var btnBattery: MaterialButton
     private lateinit var btnOverlay: MaterialButton
-    private lateinit var btnAddGame: MaterialButton
+    private lateinit var btnAddGameManual: MaterialButton
+    private lateinit var btnClearGames: MaterialButton
 
     private val postNotificationsLauncher = registerForActivityResult(
         ActivityResultContracts.RequestPermission()
@@ -47,13 +48,15 @@ class WeChatNotifierActivity : AppCompatActivity() {
         btnUsageStats = findViewById(R.id.btn_usage_stats)
         btnBattery = findViewById(R.id.btn_battery)
         btnOverlay = findViewById(R.id.btn_overlay)
-        btnAddGame = findViewById(R.id.btn_add_game)
+        btnAddGameManual = findViewById(R.id.btn_add_game_manual)
+        btnClearGames = findViewById(R.id.btn_clear_games)
 
         btnOpenSettings.setOnClickListener { openNotificationSettings() }
         btnUsageStats.setOnClickListener { openUsageStatsSettings() }
         btnBattery.setOnClickListener { openBatterySettings() }
         btnOverlay.setOnClickListener { openOverlaySettings() }
-        btnAddGame.setOnClickListener { showAddGameDialog() }
+        btnAddGameManual.setOnClickListener { showManualInputDialog() }
+        btnClearGames.setOnClickListener { clearGamePackages() }
 
         requestPostNotifications()
     }
@@ -141,18 +144,13 @@ class WeChatNotifierActivity : AppCompatActivity() {
     // ---------- 电池优化 ----------
 
     private fun openBatterySettings() {
-        val intent = Intent(Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS).apply {
+        val intent = Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
             data = Uri.parse("package:$packageName")
         }
         if (intent.resolveActivity(packageManager) != null) {
             startActivity(intent)
         } else {
-            val fallback = Intent(Settings.ACTION_IGNORE_BATTERY_OPTIMIZATION_SETTINGS)
-            if (fallback.resolveActivity(packageManager) != null) {
-                startActivity(fallback)
-            } else {
-                Toast.makeText(this, "无法打开电池优化设置", Toast.LENGTH_SHORT).show()
-            }
+            Toast.makeText(this, "无法打开应用设置", Toast.LENGTH_SHORT).show()
         }
     }
 
@@ -191,19 +189,20 @@ class WeChatNotifierActivity : AppCompatActivity() {
         val pkgs = GamePackages.getAll(this)
         if (pkgs.isEmpty()) {
             gamePkgList.text = getString(R.string.game_list_empty)
+            gamePkgList.setOnClickListener(null)
         } else {
-            gamePkgList.text = pkgs.joinToString("\n") { "✖  $it  [点击删除]" }
+            gamePkgList.text = pkgs.joinToString("\n") { "✖  $it  [点击清空]" }
+            gamePkgList.setOnClickListener { clearGamePackages() }
         }
-        gamePkgList.setOnClickListener { removeGamePackage() }
     }
 
-    private fun showAddGameDialog() {
+    private fun showManualInputDialog() {
         val input = EditText(this).apply {
-            hint = "输入游戏包名，如 com.tencent.tmgp.sgame"
+            hint = "com.tencent.tmgp.sgame"
         }
         AlertDialog.Builder(this)
-            .setTitle("添加游戏")
-            .setMessage("请输入游戏的包名（可在应用详情或 Play 商店中找到）")
+            .setTitle("手动输入游戏包名")
+            .setMessage("输入应用的包名。例如：\n王者荣耀: com.tencent.tmgp.sgame\n原神: com.miHoYo.GenshinImpact")
             .setView(input)
             .setPositiveButton("添加") { _, _ ->
                 val pkg = input.text.toString().trim()
@@ -217,16 +216,18 @@ class WeChatNotifierActivity : AppCompatActivity() {
             .show()
     }
 
-    private fun removeGamePackage() {
-        val pkgs = GamePackages.getAll(this).toList()
-        if (pkgs.isEmpty()) return
+    private fun clearGamePackages() {
         AlertDialog.Builder(this)
-            .setTitle("删除游戏")
-            .setItems(pkgs.toTypedArray()) { _, which ->
-                GamePackages.remove(this, pkgs[which])
+            .setTitle("清空游戏列表")
+            .setMessage("确定要清空所有已添加的游戏吗？")
+            .setPositiveButton("清空") { _, _ ->
+                for (pkg in GamePackages.getAll(this)) {
+                    GamePackages.remove(this, pkg)
+                }
                 updateGameList()
-                Toast.makeText(this, "已删除", Toast.LENGTH_SHORT).show()
+                Toast.makeText(this, "已清空", Toast.LENGTH_SHORT).show()
             }
+            .setNegativeButton("取消", null)
             .show()
     }
 
