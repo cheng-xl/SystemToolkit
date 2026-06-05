@@ -7,12 +7,6 @@ import android.app.usage.UsageStatsManager
 import android.content.Context
 import android.media.AudioAttributes
 import android.media.AudioManager
-import android.media.Ringtone
-import android.media.RingtoneManager
-import android.os.Build
-import android.os.VibrationEffect
-import android.os.Vibrator
-import android.os.VibratorManager
 import android.service.notification.NotificationListenerService
 import android.service.notification.StatusBarNotification
 import com.example.systemtoolkit.R
@@ -22,7 +16,6 @@ class WeChatNotificationService : NotificationListenerService() {
 
     private var lastAlertTime = 0L
     private val minIntervalMs = 3000L
-    private var currentRingtone: Ringtone? = null
     private lateinit var barrageManager: BarrageManager
 
     override fun onCreate() {
@@ -57,27 +50,17 @@ class WeChatNotificationService : NotificationListenerService() {
         val wechatInForeground = isWeChatInForeground()
 
         if (wechatInForeground) {
-            // 应用内：只震动
-            vibrate()
+            // 应用内：只震动（系统通知渠道，跟随系统震动）
+            postAlertNotification(silent = true)
         } else {
-            // 锁屏/桌面/后台：发声 + 震动
-            if (ringerMode == AudioManager.RINGER_MODE_NORMAL) {
-                playSound()
-            }
-            vibrate()
+            // 后台/锁屏/桌面：系统通知渠道播放声音+震动，完全跟随系统设置
+            postAlertNotification(silent = false)
         }
 
         lastAlertTime = System.currentTimeMillis()
     }
 
-    override fun onNotificationRemoved(sbn: StatusBarNotification?) {
-        if (sbn?.packageName == WECHAT_PACKAGE && isCallNotification(sbn)) {
-            stopCurrentRingtone()
-        }
-    }
-
     override fun onDestroy() {
-        stopCurrentRingtone()
         barrageManager.dismiss()
         super.onDestroy()
     }
@@ -134,13 +117,9 @@ class WeChatNotificationService : NotificationListenerService() {
     // ---------- 通知分类 ----------
 
     private fun isCallNotification(sbn: StatusBarNotification): Boolean {
-        // 系统标准分类
         if (sbn.notification.category == Notification.CATEGORY_CALL) return true
-
-        // 微信不设 category，靠通知标题中的关键词兜底
         val title = sbn.notification.extras?.getString(Notification.EXTRA_TITLE) ?: ""
         val text = sbn.notification.extras?.getString(Notification.EXTRA_TEXT) ?: ""
-
         return CALL_KEYWORDS.any { title.contains(it) || text.contains(it) }
     }
 
@@ -161,62 +140,60 @@ class WeChatNotificationService : NotificationListenerService() {
             ?: return false
         if (nm.currentInterruptionFilter != NotificationManager.INTERRUPTION_FILTER_ALL) return false
 
-        // 静音、震动、正常模式均允许提醒
-        // 静音/震动模式下 playSound() 自带模式判断不会响铃
         return ringerMode == AudioManager.RINGER_MODE_NORMAL ||
                ringerMode == AudioManager.RINGER_MODE_VIBRATE ||
                ringerMode == AudioManager.RINGER_MODE_SILENT
     }
 
-    // ---------- 声音 ----------
+    // ---------- 系统通知提醒 ----------
 
-    private fun playSound() {
-        stopCurrentRingtone()
-
-        val attrs = AudioAttributes.Builder()
-            .setUsage(AudioAttributes.USAGE_NOTIFICATION)
-            .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
+    private fun postAlertNotification(silent: Boolean) {
+        val channelId = if (silent) VIBRATE_CHANNEL else ALERT_SOUND_CHANNEL
+        val notification = Notification.Builder(this, channelId)
+            .setSmallIcon(android.R.drawable.ic_dialog_info)
+            .setAutoCancel(true)
             .build()
-
-        val uri = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION)
-        currentRingtone = RingtoneManager.getRingtone(this, uri)
-        currentRingtone?.audioAttributes = attrs
-        currentRingtone?.play()
-    }
-
-    private fun stopCurrentRingtone() {
-        currentRingtone?.let {
-            if (it.isPlaying) it.stop()
-        }
-        currentRingtone = null
-    }
-
-    // ---------- 震动 ----------
-
-    @Suppress("DEPRECATION")
-    private fun vibrate() {
-        val pattern = longArrayOf(0, 100, 50, 100)
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-            val vm = getSystemService(Context.VIBRATOR_MANAGER_SERVICE) as? VibratorManager
-            vm?.defaultVibrator?.vibrate(VibrationEffect.createWaveform(pattern, -1))
-        } else {
-            val v = getSystemService(Context.VIBRATOR_SERVICE) as? Vibrator
-            v?.vibrate(VibrationEffect.createWaveform(pattern, -1))
-        }
+        val nm = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+        nm.notify(ALERT_NOTIFICATION_ID, notification)
+        nm.cancel(ALERT_NOTIFICATION_ID)
     }
 
     // ---------- 前台服务 ----------
 
     private fun startForegroundService() {
-        val channel = NotificationChannel(
-            CHANNEL_ID,
-            "服务运行中",
-            NotificationManager.IMPORTANCE_LOW
-        ).apply {
-            description = "用于保持通知监听服务运行"
-        }
         val nm = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-        nm.createNotificationChannel(channel)
+
+        // 前台服务通道（低优先级，不发声）
+        val fgChannel = NotificationChannel(
+            CHANNEL_ID, "服务运行中", NotificationManager.IMPORTANCE_LOW
+        ).apply { description = "用于保持通知监听服务运行" }
+        nm.createNotificationChannel(fgChannel)
+
+        // 提醒通道：后台通知（声音+震动，跟随系统设置）
+        val soundChannel = NotificationChannel(
+            ALERT_SOUND_CHANNEL, "通知提醒", NotificationManager.IMPORTANCE_DEFAULT
+        ).apply {
+            description = "后台/锁屏时的声音和震动提醒"
+            setSound(
+                android.provider.Settings.System.DEFAULT_NOTIFICATION_URI,
+                AudioAttributes.Builder()
+                    .setUsage(AudioAttributes.USAGE_NOTIFICATION)
+                    .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
+                    .build()
+            )
+            enableVibration(true)
+        }
+        nm.createNotificationChannel(soundChannel)
+
+        // 提醒通道：前台仅震动（不发声）
+        val vibrateChannel = NotificationChannel(
+            VIBRATE_CHANNEL, "震动提醒", NotificationManager.IMPORTANCE_DEFAULT
+        ).apply {
+            description = "应用内或静音模式下的仅震动提醒"
+            setSound(null, null)
+            enableVibration(true)
+        }
+        nm.createNotificationChannel(vibrateChannel)
 
         val notification = Notification.Builder(this, CHANNEL_ID)
             .setContentTitle(getString(R.string.wechat_foreground_notification_title))
@@ -224,14 +201,16 @@ class WeChatNotificationService : NotificationListenerService() {
             .setSmallIcon(android.R.drawable.ic_dialog_info)
             .setOngoing(true)
             .build()
-
         startForeground(FOREGROUND_ID, notification)
     }
 
     companion object {
         private const val WECHAT_PACKAGE = "com.tencent.mm"
         private const val CHANNEL_ID = "wechat_notifier_channel"
+        private const val ALERT_SOUND_CHANNEL = "alert_sound_channel"
+        private const val VIBRATE_CHANNEL = "vibrate_only_channel"
         private const val FOREGROUND_ID = 1
+        private const val ALERT_NOTIFICATION_ID = 99
         private val CALL_KEYWORDS = arrayOf("语音", "视频", "通话", "来电", "语音通话", "视频通话")
     }
 }
