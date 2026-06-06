@@ -15,7 +15,7 @@ import com.example.systemtoolkit.feature.updateblocker.SystemUpdatePackages
 class WeChatNotificationService : NotificationListenerService() {
 
     private var lastAlertTime = 0L
-    private val minIntervalMs = 3000L
+    private val minIntervalMs = 2000L
     private lateinit var barrageManager: BarrageManager
 
     override fun onCreate() {
@@ -182,6 +182,7 @@ class WeChatNotificationService : NotificationListenerService() {
                     .build()
             )
             enableVibration(true)
+            vibrationPattern = longArrayOf(0, 200)
         }
         nm.createNotificationChannel(soundChannel)
 
@@ -192,6 +193,7 @@ class WeChatNotificationService : NotificationListenerService() {
             description = "应用内或静音模式下的仅震动提醒"
             setSound(null, null)
             enableVibration(true)
+            vibrationPattern = longArrayOf(0, 200)
         }
         nm.createNotificationChannel(vibrateChannel)
 
