@@ -87,3 +87,23 @@ app/src/main/java/com/example/systemtoolkit/
 3. 在 `AndroidManifest.xml` 中声明 Activity
 
 无需改动 `MainActivity`、`ToolAdapter` 等已有代码。
+
+---
+
+## 更新日志
+
+### v2.1 — 2026-06-06
+- 声音震动改用 Notification 渠道，完全跟随系统，不再双响双重震动
+- 新增游戏横屏弹幕通知、系统更新屏蔽两个工具
+- 游戏包名手动输入，附带常见游戏参考
+- 震动改为单次脉冲，防抖缩短为 2 秒
+- 滚动条隐藏、电池跳转等 UI 优化
+
+### v2.0.0 — 2026-05-15
+- 项目重构：WeChatNotifier → SystemToolkit，可扩展架构
+- 仪表盘主界面，FeatureRegistry 注册中心模式
+- 前台服务保活，来电/前台区分，系统模式跟随
+- 权限检测修复、异常保护、字符串国际化、矢量图标、ProGuard 收紧
+
+### v1.0.0 — 2026-05-08
+- 初版微信通知监听，铃声和震动触发，勿扰模式检测
